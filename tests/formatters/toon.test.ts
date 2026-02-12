@@ -334,6 +334,23 @@ describe("toonFormatter", () => {
     });
   });
 
+  describe("unsupported block types", () => {
+    test("includes rawJson for unknown block type", () => {
+      const result = toonFormatter.formatPage({
+        page: { id: "1", title: "T", url: "", properties: {} },
+        blocks: [
+          {
+            type: "super_duper_block_9999",
+            rawJson: '{"expression":"E = mc^2"}',
+          },
+        ],
+      });
+      expect(result).toContain("super_duper_block_9999");
+      expect(result).toContain("rawJson");
+      expect(result).toContain("E = mc^2");
+    });
+  });
+
   describe("child_page and child_database with id", () => {
     test("includes id for child_page", () => {
       const result = toonFormatter.formatPage({

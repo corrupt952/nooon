@@ -19,6 +19,7 @@ interface ToonBlock {
   hasColumnHeader?: boolean;
   hasRowHeader?: boolean;
   cells?: string[];
+  rawJson?: string;
   children?: ToonBlock[];
 }
 
@@ -70,6 +71,9 @@ function blockToToon(block: SlimBlock): ToonBlock {
   }
   if (block.cells) {
     result.cells = block.cells;
+  }
+  if (block.rawJson) {
+    result.rawJson = block.rawJson;
   }
   if (block.children && block.children.length > 0) {
     result.children = block.children.map(blockToToon);

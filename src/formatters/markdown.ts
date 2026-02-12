@@ -102,7 +102,7 @@ function blockToMarkdown(block: SlimBlock, indent: string = ""): string {
       break;
     }
     default:
-      result = text || "";
+      result = text || block.rawJson || "";
   }
 
   // Handle nested children (skip for table, already handled)

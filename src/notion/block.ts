@@ -44,6 +44,7 @@ export interface SlimBlock {
   hasColumnHeader?: boolean;
   hasRowHeader?: boolean;
   cells?: string[];
+  rawJson?: string;
   children?: SlimBlock[];
 }
 
@@ -144,7 +145,12 @@ export function slimBlock(block: BlockObjectResponse): SlimBlock {
       return { ...base, id: block.id, title: block.child_page.title };
     case "child_database":
       return { ...base, id: block.id, title: block.child_database.title };
-    default:
+    default: {
+      const data = (block as Record<string, unknown>)[block.type];
+      if (data && typeof data === "object") {
+        return { ...base, rawJson: JSON.stringify(data) };
+      }
       return base;
+    }
   }
 }

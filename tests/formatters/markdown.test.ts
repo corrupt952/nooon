@@ -371,6 +371,27 @@ describe("markdownFormatter", () => {
     });
   });
 
+  describe("unsupported block types", () => {
+    test("outputs raw JSON for unknown block type", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "super_duper_block_9999",
+            rawJson: '{"expression":"E = mc^2"}',
+          },
+        ]),
+      );
+      expect(content).toBe('{"expression":"E = mc^2"}');
+    });
+
+    test("outputs empty string for unknown block type without rawJson", () => {
+      const content = getContent(
+        formatBlocks([{ type: "super_duper_block_9999" }]),
+      );
+      expect(content).toBe("");
+    });
+  });
+
   describe("rich text annotations", () => {
     test("formats bold text", () => {
       const content = getContent(

@@ -413,8 +413,19 @@ describe("slimBlock", () => {
     });
   });
 
-  test("handles unknown block type", () => {
-    const block = { type: "unknown_type" };
-    expect(slimBlock(block)).toEqual({ type: "unknown_type" });
+  test("handles unknown block type with data as raw JSON", () => {
+    const block = {
+      type: "super_duper_block_9999",
+      super_duper_block_9999: { expression: "E = mc^2", color: "red" },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "super_duper_block_9999",
+      rawJson: '{"expression":"E = mc^2","color":"red"}',
+    });
+  });
+
+  test("handles unknown block type without data", () => {
+    const block = { type: "super_duper_block_9999" };
+    expect(slimBlock(block)).toEqual({ type: "super_duper_block_9999" });
   });
 });
