@@ -41,6 +41,9 @@ export interface SlimBlock {
   language?: string;
   url?: string;
   title?: string;
+  hasColumnHeader?: boolean;
+  hasRowHeader?: boolean;
+  cells?: string[];
   children?: SlimBlock[];
 }
 
@@ -117,6 +120,19 @@ export function slimBlock(block: BlockObjectResponse): SlimBlock {
       return { ...base, url: block.bookmark.url };
     case "embed":
       return { ...base, url: block.embed.url };
+    case "table":
+      return {
+        ...base,
+        hasColumnHeader: block.table.has_column_header,
+        hasRowHeader: block.table.has_row_header,
+      };
+    case "table_row":
+      return {
+        ...base,
+        cells: block.table_row.cells.map((cell: RichTextItemResponse[]) =>
+          cell.map((rt) => rt.plain_text).join(""),
+        ),
+      };
     case "divider":
     case "table_of_contents":
     case "column_list":

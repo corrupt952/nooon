@@ -343,6 +343,76 @@ describe("slimBlock", () => {
     });
   });
 
+  test("handles table block", () => {
+    const block = {
+      type: "table",
+      table: { has_column_header: true, has_row_header: false },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "table",
+      hasColumnHeader: true,
+      hasRowHeader: false,
+    });
+  });
+
+  test("handles table block without headers", () => {
+    const block = {
+      type: "table",
+      table: { has_column_header: false, has_row_header: false },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "table",
+      hasColumnHeader: false,
+      hasRowHeader: false,
+    });
+  });
+
+  test("handles table_row block", () => {
+    const block = {
+      type: "table_row",
+      table_row: {
+        cells: [
+          [{ plain_text: "Cell 1" }],
+          [{ plain_text: "Cell 2" }],
+          [{ plain_text: "Cell 3" }],
+        ],
+      },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "table_row",
+      cells: ["Cell 1", "Cell 2", "Cell 3"],
+    });
+  });
+
+  test("handles table_row with multi-segment rich text cells", () => {
+    const block = {
+      type: "table_row",
+      table_row: {
+        cells: [
+          [{ plain_text: "Hello " }, { plain_text: "World" }],
+          [{ plain_text: "Single" }],
+        ],
+      },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "table_row",
+      cells: ["Hello World", "Single"],
+    });
+  });
+
+  test("handles table_row with empty cells", () => {
+    const block = {
+      type: "table_row",
+      table_row: {
+        cells: [[], [{ plain_text: "Data" }]],
+      },
+    };
+    expect(slimBlock(block)).toEqual({
+      type: "table_row",
+      cells: ["", "Data"],
+    });
+  });
+
   test("handles unknown block type", () => {
     const block = { type: "unknown_type" };
     expect(slimBlock(block)).toEqual({ type: "unknown_type" });

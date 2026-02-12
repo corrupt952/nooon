@@ -16,6 +16,9 @@ interface ToonBlock {
   language?: string;
   url?: string;
   title?: string;
+  hasColumnHeader?: boolean;
+  hasRowHeader?: boolean;
+  cells?: string[];
   children?: ToonBlock[];
 }
 
@@ -58,6 +61,15 @@ function blockToToon(block: SlimBlock): ToonBlock {
   }
   if (block.title) {
     result.title = block.title;
+  }
+  if (block.hasColumnHeader !== undefined) {
+    result.hasColumnHeader = block.hasColumnHeader;
+  }
+  if (block.hasRowHeader !== undefined) {
+    result.hasRowHeader = block.hasRowHeader;
+  }
+  if (block.cells) {
+    result.cells = block.cells;
   }
   if (block.children && block.children.length > 0) {
     result.children = block.children.map(blockToToon);

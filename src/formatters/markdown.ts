@@ -86,12 +86,27 @@ function blockToMarkdown(block: SlimBlock, indent: string = ""): string {
     case "child_database":
       result = `📊 ${block.title} (${block.id})`;
       break;
+    case "table": {
+      const rows = (block.children || []).filter((c) => c.type === "table_row");
+      if (rows.length > 0) {
+        const lines: string[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const cells = rows[i].cells || [];
+          lines.push(`| ${cells.join(" | ")} |`);
+          if (i === 0) {
+            lines.push(`| ${cells.map(() => "---").join(" | ")} |`);
+          }
+        }
+        result = lines.join("\n");
+      }
+      break;
+    }
     default:
       result = text || "";
   }
 
-  // Handle nested children
-  if (block.children && block.children.length > 0) {
+  // Handle nested children (skip for table, already handled)
+  if (block.type !== "table" && block.children && block.children.length > 0) {
     const childIndent = `${indent}  `;
     const children = block.children
       .map((child) => blockToMarkdown(child, childIndent))

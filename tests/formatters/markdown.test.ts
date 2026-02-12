@@ -464,6 +464,91 @@ describe("markdownFormatter", () => {
     });
   });
 
+  describe("table blocks", () => {
+    test("formats table with column header", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [
+              { type: "table_row", cells: ["Name", "Age", "City"] },
+              { type: "table_row", cells: ["Alice", "30", "Tokyo"] },
+              { type: "table_row", cells: ["Bob", "25", "Osaka"] },
+            ],
+          },
+        ]),
+      );
+      expect(content).toBe(
+        "| Name | Age | City |\n| --- | --- | --- |\n| Alice | 30 | Tokyo |\n| Bob | 25 | Osaka |",
+      );
+    });
+
+    test("formats table without column header", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "table",
+            hasColumnHeader: false,
+            hasRowHeader: false,
+            children: [
+              { type: "table_row", cells: ["A", "B"] },
+              { type: "table_row", cells: ["C", "D"] },
+            ],
+          },
+        ]),
+      );
+      expect(content).toBe("| A | B |\n| --- | --- |\n| C | D |");
+    });
+
+    test("formats table with single row", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [{ type: "table_row", cells: ["Header1", "Header2"] }],
+          },
+        ]),
+      );
+      expect(content).toBe("| Header1 | Header2 |\n| --- | --- |");
+    });
+
+    test("formats table with empty children", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [],
+          },
+        ]),
+      );
+      expect(content).toBe("");
+    });
+
+    test("table does not duplicate children as nested blocks", () => {
+      const content = getContent(
+        formatBlocks([
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [
+              { type: "table_row", cells: ["A", "B"] },
+              { type: "table_row", cells: ["C", "D"] },
+            ],
+          },
+        ]),
+      );
+      // Should not contain indented table_row output
+      expect(content).not.toContain("  ");
+    });
+  });
+
   describe("nested blocks", () => {
     test("formats nested children with indentation", () => {
       const content = getContent(

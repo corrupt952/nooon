@@ -270,6 +270,70 @@ describe("toonFormatter", () => {
     });
   });
 
+  describe("table blocks", () => {
+    test("includes hasColumnHeader and hasRowHeader for table", () => {
+      const result = toonFormatter.formatPage({
+        page: { id: "1", title: "T", url: "", properties: {} },
+        blocks: [
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [
+              { type: "table_row", cells: ["A", "B"] },
+              { type: "table_row", cells: ["C", "D"] },
+            ],
+          },
+        ],
+      });
+      expect(result).toContain("table");
+      expect(result).toContain("hasColumnHeader");
+      expect(result).toContain("true");
+      expect(result).toContain("hasRowHeader");
+      expect(result).toContain("false");
+    });
+
+    test("includes cells for table_row", () => {
+      const result = toonFormatter.formatPage({
+        page: { id: "1", title: "T", url: "", properties: {} },
+        blocks: [
+          {
+            type: "table",
+            hasColumnHeader: true,
+            hasRowHeader: false,
+            children: [
+              { type: "table_row", cells: ["Name", "Age"] },
+              { type: "table_row", cells: ["Alice", "30"] },
+            ],
+          },
+        ],
+      });
+      expect(result).toContain("table_row");
+      expect(result).toContain("cells");
+      expect(result).toContain("Name");
+      expect(result).toContain("Age");
+      expect(result).toContain("Alice");
+      expect(result).toContain("30");
+    });
+
+    test("table without headers omits hasColumnHeader/hasRowHeader when false is preserved", () => {
+      const result = toonFormatter.formatPage({
+        page: { id: "1", title: "T", url: "", properties: {} },
+        blocks: [
+          {
+            type: "table",
+            hasColumnHeader: false,
+            hasRowHeader: false,
+            children: [{ type: "table_row", cells: ["X", "Y"] }],
+          },
+        ],
+      });
+      expect(result).toContain("table");
+      expect(result).toContain("hasColumnHeader");
+      expect(result).toContain("hasRowHeader");
+    });
+  });
+
   describe("child_page and child_database with id", () => {
     test("includes id for child_page", () => {
       const result = toonFormatter.formatPage({
