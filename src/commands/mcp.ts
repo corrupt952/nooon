@@ -9,11 +9,14 @@ export async function handleMcp(args: string[]): Promise<void> {
       const scriptPath = process.argv[1];
       const isLocal = args.includes("--local");
       const scope = isLocal ? "local" : "user";
-      // If running as compiled binary, use execPath alone; otherwise use execPath + script
-      const command =
-        scriptPath.endsWith(".ts") || scriptPath.endsWith(".js")
-          ? `claude mcp add nooon --scope ${scope} -- ${execPath} run ${scriptPath} mcp`
-          : `claude mcp add nooon --scope ${scope} -- ${execPath} mcp`;
+      let command: string;
+      if (scriptPath.endsWith(".ts")) {
+        command = `claude mcp add nooon --scope ${scope} -- ${execPath} run ${scriptPath} mcp`;
+      } else if (scriptPath.endsWith(".js")) {
+        command = `claude mcp add nooon --scope ${scope} -- bunx nooon mcp`;
+      } else {
+        command = `claude mcp add nooon --scope ${scope} -- ${execPath} mcp`;
+      }
       console.log(command);
       break;
     }
@@ -21,24 +24,26 @@ export async function handleMcp(args: string[]): Promise<void> {
     case "config": {
       const execPath = process.execPath;
       const scriptPath = process.argv[1];
-      const config =
-        scriptPath.endsWith(".ts") || scriptPath.endsWith(".js")
-          ? {
-              mcpServers: {
-                nooon: {
-                  command: execPath,
-                  args: ["run", scriptPath, "mcp"],
-                },
-              },
-            }
-          : {
-              mcpServers: {
-                nooon: {
-                  command: execPath,
-                  args: ["mcp"],
-                },
-              },
-            };
+      let config: object;
+      if (scriptPath.endsWith(".ts")) {
+        config = {
+          mcpServers: {
+            nooon: { command: execPath, args: ["run", scriptPath, "mcp"] },
+          },
+        };
+      } else if (scriptPath.endsWith(".js")) {
+        config = {
+          mcpServers: {
+            nooon: { command: "bunx", args: ["nooon", "mcp"] },
+          },
+        };
+      } else {
+        config = {
+          mcpServers: {
+            nooon: { command: execPath, args: ["mcp"] },
+          },
+        };
+      }
       console.log(JSON.stringify(config, null, 2));
       break;
     }
