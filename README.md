@@ -1,5 +1,6 @@
 # nooon
 
+[![SafeSkill 85/100](https://img.shields.io/badge/SafeSkill-85%2F100_Passes%20with%20Notes-yellow)](https://safeskill.dev/scan/corrupt952-nooon)
 Lightweight, read-only Notion MCP Server optimized for token efficiency.
 
 ## Features
