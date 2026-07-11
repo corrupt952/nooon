@@ -1,7 +1,7 @@
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
-    'github>corrupt952/.github:default.json5',
+    'github>corrupt952/renovate-config:default.json5',
 
     // CAUTION: This repository has no tests, so skip status checks
     ':skipStatusChecks',
