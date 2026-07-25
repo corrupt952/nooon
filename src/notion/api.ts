@@ -1,10 +1,14 @@
-import type {
-  BlockObjectResponse,
-  PageObjectResponse,
-  QueryDataSourceParameters,
+import {
+  APIErrorCode,
+  type BlockObjectResponse,
+  Client,
+  ClientErrorCode,
+  isNotionClientError,
+  type PageObjectResponse,
+  type QueryDataSourceParameters,
 } from "@notionhq/client";
-import { Client } from "@notionhq/client";
 import pLimit from "p-limit";
+import pRetry from "p-retry";
 import { refreshToken, startAuthFlow } from "../auth";
 import { getToken, isTokenExpired, type TokenData } from "../config";
 import type { SlimBlock } from "./block";
@@ -16,6 +20,29 @@ let notionClient: Client | null = null;
 // Rate limit: 3 requests/sec for Notion API
 const CONCURRENCY_LIMIT = 3;
 const limit = pLimit(CONCURRENCY_LIMIT);
+
+// Errors worth retrying: rate limiting, transient server issues, and timeouts
+const RETRYABLE_API_CODES: string[] = [
+  APIErrorCode.RateLimited,
+  APIErrorCode.ServiceUnavailable,
+  APIErrorCode.InternalServerError,
+  APIErrorCode.ConflictError,
+  ClientErrorCode.RequestTimeout,
+];
+
+// Wrap a Notion API call with exponential backoff retry for transient failures
+function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  return pRetry(fn, {
+    retries: 3,
+    shouldRetry: ({ error }) =>
+      isNotionClientError(error) && RETRYABLE_API_CODES.includes(error.code),
+    onFailedAttempt: ({ error, attemptNumber, retriesLeft }) => {
+      console.error(
+        `Notion API request failed (attempt ${attemptNumber}, ${retriesLeft} retries left): ${error.message}`,
+      );
+    },
+  });
+}
 
 async function ensureValidToken(): Promise<TokenData> {
   let token = getToken();
@@ -63,34 +90,37 @@ export async function search(
     params.start_cursor = startCursor;
   }
 
-  return client.search(params);
+  return withRetry(() => client.search(params));
 }
 
 // ============ Pages ============
 
 export async function getPage(pageId: string) {
   const client = await getClient();
-  return client.pages.retrieve({ page_id: pageId });
+  return withRetry(() => client.pages.retrieve({ page_id: pageId }));
 }
 
 export async function getPageContent(pageId: string) {
   const client = await getClient();
-  const blocks = await client.blocks.children.list({ block_id: pageId });
-  return blocks;
+  return withRetry(() => client.blocks.children.list({ block_id: pageId }));
 }
 
 // ============ Databases ============
 
 export async function getDatabase(databaseId: string) {
   const client = await getClient();
-  return client.databases.retrieve({ database_id: databaseId });
+  return withRetry(() =>
+    client.databases.retrieve({ database_id: databaseId }),
+  );
 }
 
 // ============ Data Sources ============
 
 export async function getDataSource(dataSourceId: string) {
   const client = await getClient();
-  return client.dataSources.retrieve({ data_source_id: dataSourceId });
+  return withRetry(() =>
+    client.dataSources.retrieve({ data_source_id: dataSourceId }),
+  );
 }
 
 export type QueryFilter = QueryDataSourceParameters["filter"];
@@ -103,24 +133,26 @@ export async function queryDataSource(
   startCursor?: string,
 ) {
   const client = await getClient();
-  return client.dataSources.query({
-    data_source_id: dataSourceId,
-    ...(filter && { filter }),
-    ...(sorts && { sorts }),
-    ...(startCursor && { start_cursor: startCursor }),
-  });
+  return withRetry(() =>
+    client.dataSources.query({
+      data_source_id: dataSourceId,
+      ...(filter && { filter }),
+      ...(sorts && { sorts }),
+      ...(startCursor && { start_cursor: startCursor }),
+    }),
+  );
 }
 
 // ============ Blocks ============
 
 export async function getBlock(blockId: string) {
   const client = await getClient();
-  return client.blocks.retrieve({ block_id: blockId });
+  return withRetry(() => client.blocks.retrieve({ block_id: blockId }));
 }
 
 export async function getBlockChildren(blockId: string) {
   const client = await getClient();
-  return client.blocks.children.list({ block_id: blockId });
+  return withRetry(() => client.blocks.children.list({ block_id: blockId }));
 }
 
 // Get all block children with pagination
@@ -132,10 +164,12 @@ export async function getAllBlockChildren(
   let cursor: string | undefined;
 
   do {
-    const response = await client.blocks.children.list({
-      block_id: blockId,
-      start_cursor: cursor,
-    });
+    const response = await withRetry(() =>
+      client.blocks.children.list({
+        block_id: blockId,
+        start_cursor: cursor,
+      }),
+    );
     allBlocks.push(...(response.results as BlockObjectResponse[]));
     cursor = response.has_more
       ? (response.next_cursor ?? undefined)
@@ -143,6 +177,21 @@ export async function getAllBlockChildren(
   } while (cursor);
 
   return allBlocks;
+}
+
+// ============ Comments ============
+
+// List page-level comments. Notion's API only returns comments attached
+// directly to blockId; comments on descendant blocks require querying each
+// block separately, which nooon skips to keep API calls minimal.
+export async function listComments(blockId: string, startCursor?: string) {
+  const client = await getClient();
+  return withRetry(() =>
+    client.comments.list({
+      block_id: blockId,
+      ...(startCursor && { start_cursor: startCursor }),
+    }),
+  );
 }
 
 // Fetch blocks recursively with rate limiting (preserves order)

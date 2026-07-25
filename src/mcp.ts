@@ -9,6 +9,7 @@ import {
   getDatabase,
   getDataSource,
   getPageWithCache,
+  listComments,
   parseFilter,
   parseNotionId,
   parseSorts,
@@ -16,6 +17,7 @@ import {
   queryDataSource,
   search,
   slimBlock,
+  slimComments,
   slimDatabase,
   slimDataSourceSchema,
   slimQueryResults,
@@ -169,6 +171,26 @@ server.tool(
       }
       throw e;
     }
+  },
+);
+
+// Tool: nooon_comments
+server.tool(
+  "nooon_comments",
+  "Get comments on a Notion page or block. Note: Notion's API only returns comments attached directly to the given ID (page-level comments for a page ID); comments on child blocks are not included and would require querying each block individually.",
+  {
+    id: z.string().describe("Notion page or block ID or URL"),
+    cursor: z
+      .string()
+      .optional()
+      .describe("Pagination cursor from previous response's next_cursor"),
+  },
+  async ({ id, cursor }) => {
+    const blockId = parseNotionId(id);
+    const result = await listComments(blockId, cursor);
+    return {
+      content: [{ type: "text", text: toToon(slimComments(result)) }],
+    };
   },
 );
 
