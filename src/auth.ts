@@ -287,7 +287,9 @@ export async function refreshToken(
 
   const token: TokenData = {
     access_token: data.access_token,
-    refresh_token: data.refresh_token,
+    // Notion's refresh response documents refresh_token as nullable;
+    // fall back to the current one so a null response doesn't strand us.
+    refresh_token: data.refresh_token ?? refreshTokenValue,
     expires_at: data.expires_in
       ? Date.now() + data.expires_in * 1000
       : undefined,

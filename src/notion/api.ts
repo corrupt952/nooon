@@ -200,7 +200,22 @@ export async function fetchBlocksRecursive(
   slimBlockFn: (block: BlockObjectResponse) => SlimBlock,
 ): Promise<SlimBlock[]> {
   async function fetchChildren(parentId: string): Promise<SlimBlock[]> {
-    const blocks = await limit(() => getAllBlockChildren(parentId));
+    let blocks: BlockObjectResponse[];
+    try {
+      blocks = await limit(() => getAllBlockChildren(parentId));
+    } catch (error) {
+      // The Notion API rejects the entire children.list call when a page
+      // contains a block type it can't serve (e.g. ai_block). Surface the
+      // error as a single block instead of failing the whole page fetch.
+      return [
+        {
+          type: "fetch_error",
+          rawJson: JSON.stringify({
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        },
+      ];
+    }
 
     // Process all blocks in parallel while preserving order
     const processedBlocks = await Promise.all(

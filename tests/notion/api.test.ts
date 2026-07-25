@@ -34,13 +34,17 @@ beforeAll(async () => {
 });
 
 describe("fetchBlocksRecursive (regression for #16)", () => {
-  test("a single unsupported block type fails the entire page fetch", async () => {
-    // This documents the current (buggy) behavior: the Notion API rejects
-    // the whole children.list call for a block it can't serve (e.g.
-    // ai_block), and fetchBlocksRecursive propagates that failure instead
-    // of skipping the offending block and returning the rest of the page.
-    await expect(
-      fetchBlocksRecursive("page-id", (b) => ({ type: b.type })),
-    ).rejects.toThrow(/ai_block/);
+  test("an unsupported block type surfaces as a fetch_error block instead of failing the page", async () => {
+    // The Notion API rejects the whole children.list call for a page
+    // containing a block it can't serve (e.g. ai_block). Rather than
+    // propagating that failure and losing the whole page, it should be
+    // surfaced as a single fallback block.
+    const result = await fetchBlocksRecursive("page-id", (b) => ({
+      type: b.type,
+    }));
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe("fetch_error");
+    expect(result[0].rawJson).toContain("ai_block");
   });
 });
