@@ -79,10 +79,13 @@ jobs:
           path: artifacts
 
       - name: Create Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        with:
-          files: |
-            artifacts/nooon-linux-x64/nooon-linux-x64
-            artifacts/nooon-linux-arm64/nooon-linux-arm64
-            artifacts/nooon-darwin-x64/nooon-darwin-x64
-            artifacts/nooon-darwin-arm64/nooon-darwin-arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          artifacts/nooon-linux-x64/nooon-linux-x64
+          artifacts/nooon-linux-arm64/nooon-linux-arm64
+          artifacts/nooon-darwin-x64/nooon-darwin-x64
+          artifacts/nooon-darwin-arm64/nooon-darwin-arm64
+          --verify-tag
+          --notes ""
