@@ -7,7 +7,11 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   build:
@@ -58,6 +62,8 @@ jobs:
   release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
