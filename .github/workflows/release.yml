@@ -81,11 +81,15 @@ jobs:
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: >-
-          gh release create "${GITHUB_REF_NAME}"
-          artifacts/nooon-linux-x64/nooon-linux-x64
-          artifacts/nooon-linux-arm64/nooon-linux-arm64
-          artifacts/nooon-darwin-x64/nooon-darwin-x64
-          artifacts/nooon-darwin-arm64/nooon-darwin-arm64
-          --verify-tag
-          --notes ""
+        run: |
+          assets=(
+            artifacts/nooon-linux-x64/nooon-linux-x64
+            artifacts/nooon-linux-arm64/nooon-linux-arm64
+            artifacts/nooon-darwin-x64/nooon-darwin-x64
+            artifacts/nooon-darwin-arm64/nooon-darwin-arm64
+          )
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" "${assets[@]}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" "${assets[@]}" --verify-tag --notes ""
+          fi
