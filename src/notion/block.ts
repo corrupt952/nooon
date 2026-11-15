@@ -41,6 +41,7 @@ export interface SlimBlock {
   language?: string;
   url?: string;
   title?: string;
+  refType?: "page_id" | "database_id";
   hasColumnHeader?: boolean;
   hasRowHeader?: boolean;
   cells?: string[];
@@ -145,6 +146,15 @@ export function slimBlock(block: BlockObjectResponse): SlimBlock {
       return { ...base, id: block.id, title: block.child_page.title };
     case "child_database":
       return { ...base, id: block.id, title: block.child_database.title };
+    case "link_to_page": {
+      const link = block.link_to_page;
+      const refType: "page_id" | "database_id" = link.type ?? "page_id";
+      return {
+        ...base,
+        id: refType === "database_id" ? link.database_id : link.page_id,
+        refType,
+      };
+    }
     default: {
       const data = (block as Record<string, unknown>)[block.type];
       if (data && typeof data === "object") {
